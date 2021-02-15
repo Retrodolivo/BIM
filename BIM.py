@@ -1,9 +1,11 @@
 import tkinter as tk
-import ADC_ad4020 as ADC
+import ADC_ad4020
 import RPi.GPIO as GPIO
 
 win = tk.Tk()
 win.title("BIM GUI")
+
+ADC = ADC_ad4020.AD4020(1, 0, 0, 2000000)
 
 #_______________DEFINES_________________
 def close():
@@ -11,7 +13,10 @@ def close():
     win.destroy()
 
 def adc_read():
-    adc_label["text"] = str(ADC.ad4020_read())
+    adc_label["text"] = str(ADC.read())
+
+def dac_set():
+    pass
 
 #_____________DEFINES END________________ 
 
@@ -48,7 +53,6 @@ dac_slide.grid(in_ = dac_ad5543_lframe, pady = 10, padx = 10)
 
 #-------------------------------------------#
 
-ADC.ad4020_spi_init(1, 0, 0, 2000000)
 
 graph_btn = tk.Button(win, text = "Graph", font = "Arial 12 bold")
 graph_btn.bind("<Button-1>")
