@@ -1,28 +1,27 @@
 import tkinter as tk
 import ADC_ad4020
+import DAC_ad5791
 import RPi.GPIO as GPIO
 
 win = tk.Tk()
 win.title("BIM GUI")
 
+
 ADC = ADC_ad4020.AD4020(1, 0, 0, 2000000)
+DAC = DAC_ad5791.AD5791(0, 0, 1, 2000000)
 #_________global flags__________________
 adc_stop = True
 #_______________________________________
 
 
 #_______________DEFINES_________________
-def close():
-    GPIO.cleanup()
-    win.destroy()
-
 def adc_read_start():
     global adc_stop
     if adc_stop:
-        adc_label["text"] = str(ADC.read())
+        adc_label["text"] = str("%.6f" %adc_average_val() + " V")
         adc_btn_stop["state"] = "normal"
         adc_btn_start["state"] = "disabled"
-        win.after(1000, adc_read_start)
+        win.after(100, adc_read_start)
     else:
         adc_stop = True
         return
@@ -33,9 +32,23 @@ def adc_read_stop():
     adc_btn_start["state"] = "normal"
     adc_btn_stop["state"] = "disabled"
 
-def dac_set():
-    pass
+def adc_average_val():
+    max_counts = 500
+    sum_val = 0
+    i = 0
+    
+    for i in range(max_counts):
+        sum_val += ADC.read()
+        i += 1
+    average_val = sum_val / max_counts
+    return average_val
 
+def dac_set():
+    DAC.set(dac_entry.get())
+
+def close():
+    GPIO.cleanup()
+    win.destroy()
 #_____________DEFINES END________________ 
 
 #--------------DAC_AD5791-------------------#
@@ -45,14 +58,14 @@ dac_ad5791_lframe.grid(row = 0, column = 0, pady = 10, padx = 10)
 dac_entry = tk.Entry(dac_ad5791_lframe, width = 10, font = "Arial 12 bold", justify = "center")
 dac_entry.grid(in_ = dac_ad5791_lframe, pady = 10, padx = 10)
 
-dac_button = tk.Button(dac_ad5791_lframe, text = "Set Um", font = "Arial 11", width = 7)
+dac_button = tk.Button(dac_ad5791_lframe, text = "Set Um", font = "Arial 11", width = 7, command = dac_set)
 dac_button.grid(in_ = dac_ad5791_lframe, pady = 10, padx = 10) 
 
 #--------------ADC_AD4020-------------------#
 dac_ad4020_lframe = tk.LabelFrame(win, text = "ADC ad4020", font = "Arial 12 bold", width=200, height=100)
 dac_ad4020_lframe.grid(row = 0, column = 1, pady = 10, padx = 10)
 
-adc_label = tk.Label(dac_ad4020_lframe, text = "_.______ V", height = 2, font = "Arial 20 bold", bg = "pink")
+adc_label = tk.Label(dac_ad4020_lframe, text = "_.______V", height = 2, font = "Arial 20 bold", bg = "pink")
 adc_label.grid(in_ = dac_ad4020_lframe, pady = 10, padx = 10)
 
 adc_btn_start = tk.Button(text = "Start", font = "Arial 11", width = 7, command = adc_read_start)

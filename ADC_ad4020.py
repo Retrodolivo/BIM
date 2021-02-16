@@ -44,17 +44,22 @@ class AD4020:
         if code >= LOWEST_POS_CODE and code <= HIGHEST_POS_CODE:
             voltage_val = float(code) / MAX_CODE * VREF
             if PRINTENABLE:
-                print("voltage_in: %.3f" %(-(voltage_val)))# - OFFSET_ERR)))
+                print("voltage_in: %.3f" %(-voltage_val))# - OFFSET_ERR)))
+                return -voltage_val# - OFFSET_ERR
             else:
-                return voltage_val# - OFFSET_ERR
-        
-
+                return -voltage_val# - OFFSET_ERR
+            
         if code >= LOWEST_NEG_CODE and code <= HIGHEST_NEG_CODE:
             voltage_val = (HIGHEST_NEG_CODE -  float(code)) / MAX_CODE * VREF
             if PRINTENABLE:
                 print("voltage_in: %.3f" %(voltage_val))# + OFFSET_ERR))
+                return voltage_val# - OFFSET_ERR
             else:
                 return voltage_val# + OFFSET_ERR
+
+        if code == 0:
+            return 0
+            
 
         if PRINTENABLE:  
             print(raw_code)
@@ -62,7 +67,7 @@ class AD4020:
 
 
 ###TOGGLE PRINT TO SHELL###
-PRINTENABLE = 1
+PRINTENABLE = 0
 ########################
 VREF = 10
 MAX_CODE = 2**19 - 1
