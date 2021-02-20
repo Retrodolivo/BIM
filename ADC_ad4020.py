@@ -9,7 +9,7 @@ import spidev
 import RPi.GPIO as GPIO
 
 class AD4020:
-    def __init__(self, port, mode, cs, speed):
+    def __init__(self, port, cs, mode, speed):
         self.ad4020_spi = spidev.SpiDev(port, cs)
         self.ad4020_spi.mode = mode
         self.ad4020_spi.max_speed_hz = speed
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     win = tk.Tk()
     entry = tk.Entry(win, width = 20)
 
-    ADC = AD4020(1, 0, 0, 2000000)   
+    ADC = AD4020(port = 1, cs = 0, mode = 0, speed = 2000000)   
 
     button_config = tk.Button(win, text = "Config", command = ADC.config)
     button_config.bind("<Button-1>")

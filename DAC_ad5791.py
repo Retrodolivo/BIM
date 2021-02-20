@@ -13,6 +13,10 @@ class AD5791:
         self.ad5791_spi.mode = mode
         self.ad5791_spi.max_speed_hz = speed
 
+        initial_voltage = 0
+        self.config()
+        self.set(initial_voltage)
+
     def config(self):
         ctrl_reg = (WRITE_REG
                           | CTRL_REG_ADDR
@@ -96,7 +100,7 @@ if __name__ == "__main__":
     win.title("DAC ad5791")
     entry = tk.Entry(width = 20, justify = "center")
     
-    DAC = AD5791(0, 0, 1, 2000000)
+    DAC = AD5791(port = 0, cs = 0, mode = 1, speed = 2000000)
     
     button_set = tk.Button(win, text = "Set", command = DAC.set)
     button_set.bind("<Button-1>")
