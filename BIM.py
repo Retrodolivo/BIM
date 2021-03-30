@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 
 import ADC_ad4020
 import DAC_ad5791
+import DAC_ad5543
 import RPi.GPIO as GPIO
 
 win = tk.Tk()
@@ -12,7 +13,7 @@ win.title("BIM GUI")
 
 ADC = ADC_ad4020.AD4020(port = 1, cs = 0, mode = 0, speed = 2000000)
 DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 2000000)
-
+Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
 
 #_________global flags__________________
 adc_stop = True
@@ -56,6 +57,9 @@ def adc_average_val():
 
 def dac_set():
     DAC.set(dac_entry.get())
+
+def divider_set(event):
+    Divider.set(Kd.get())
 
 def graph_plot():
 ##    global graph_run
@@ -104,14 +108,16 @@ graph_btn.bind("<Button-1>")
 graph_btn.grid(in_ = adc_ad4020_lframe)
 
 #--------------DAC_AD5543-------------------#
-dac_ad5543_lframe = tk.LabelFrame(win, text = "DAC_AD5543", font = "Arial 12 bold", width=200, height=100)
-dac_ad5543_lframe.grid(row = 1, column = 0, pady = 10, padx = 10)
+divider_lframe = tk.LabelFrame(win, text = "Divider", font = "Arial 12 bold", width=200, height=100)
+divider_lframe.grid(row = 1, column = 0, pady = 10, padx = 10)
 
-MIN_CODE = 0
-MAX_CODE = 2**16 - 1
+KD_MIN = 0
+KD_MAX = 1
 
-dac_slide = tk.Scale(dac_ad5543_lframe, font = "Arial 12 bold", orient = tk.HORIZONTAL, from_ = MIN_CODE, to_ = MAX_CODE)
-dac_slide.grid(in_ = dac_ad5543_lframe, pady = 10, padx = 10)
+Kd = tk.DoubleVar()
+divider_slide = tk.Scale(divider_lframe, font = "Arial 12 bold", orient = tk.HORIZONTAL, \
+                     from_ = KD_MIN, to_ = KD_MAX, resolution = 0.1, variable = Kd, command = divider_set)
+divider_slide.grid(in_ = divider_lframe, pady = 10, padx = 10)
 
 #-------------------------------------------#
 
