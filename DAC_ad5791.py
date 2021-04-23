@@ -1,6 +1,6 @@
 ################################
 ## GUI Module is controlling DAC ad5791
-## in bipolar output [-10..+10]V  
+## in unipolar output [0..+5]V  
 ################################
 
 import tkinter as tk
@@ -64,8 +64,8 @@ def close():
     win.destroy()
 
 #_______________DEFINES_________________
-VREFP = 10.0
-VREFN = -10.0
+VREFP = 5.0
+VREFN = 0
 MAX_CODE = 2**20 - 1
 
 WRITE_REG = 0x00 << 23
