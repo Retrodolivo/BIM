@@ -2,7 +2,7 @@ import tkinter as tk
 import matplotlib.pyplot as plt
 
 
-import ADC_ad4020
+import ADC_ads1256
 import DAC_ad5791
 import DAC_ad5543
 import RPi.GPIO as GPIO
@@ -10,8 +10,9 @@ import RPi.GPIO as GPIO
 win = tk.Tk()
 win.title("BIM GUI")
 
-
-ADC = ADC_ad4020.AD4020(port = 1, cs = 0, mode = 0, speed = 2000000)
+#ADC = ADC_ad4020.AD4020(port = 1, cs = 0, mode = 0, speed = 2000000)
+ADC = ADC_ads1256.ADS1256()
+ADC.ADS1256_init()
 DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 2000000)
 Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
 
@@ -19,6 +20,8 @@ Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
 adc_stop = True
 graph_run = False
 #_______________________________________
+Rb = 0
+Ppod = 0
 adc_val_list = [ ]
 
 #_______________DEFINES_________________
@@ -49,7 +52,7 @@ def adc_average_val():
     global graph_run
     
     for count in range(max_counts):
-        sum_val += ADC.read()
+        sum_val += ADC.ADS1256_GetChannalValue(0)* 5.0 / 0x7fffff
     average_val = sum_val / max_counts
     if graph_run:
         adc_val_list.append(average_val)
@@ -74,6 +77,12 @@ def graph_plot():
     plt.plot(list(range(len(adc_val_list))), adc_val_list, color='pink')
     plt.show()
 
+def pbp_set():
+    Rb = float(Rb_entry.get())
+    Ppod = float(Ppod_entry.get())
+    print("Rb = %f" %Rb)
+    print("Ppod = %f" %Ppod)
+
 def close():
     GPIO.cleanup()
     win.destroy()
@@ -92,22 +101,22 @@ dac_button = tk.Button(dac_ad5791_lframe, text = "Reset", font = "Arial 11", wid
 dac_button.grid(in_ = dac_ad5791_lframe) 
 
 #--------------Bridge output"-------------------#
-adc_ad4020_lframe = tk.LabelFrame(win, text = "Bridge output", font = "Arial 12 bold", width=200, height=100)
-adc_ad4020_lframe.grid(row = 0, column = 0, pady = 10, padx = 10)
+adc_ads1256_lframe = tk.LabelFrame(win, text = "Bridge output", font = "Arial 12 bold", width=200, height=100)
+adc_ads1256_lframe.grid(row = 0, column = 0, pady = 10, padx = 10)
 
-adc_label = tk.Label(adc_ad4020_lframe, text = "_.______V", height = 2, font = "Arial 20 bold", bg = "white")
-adc_label.grid(in_ = adc_ad4020_lframe, pady = 10, padx = 10)
+adc_label = tk.Label(adc_ads1256_lframe, text = "_.______V", height = 2, font = "Arial 20 bold", bg = "white")
+adc_label.grid(in_ = adc_ads1256_lframe, pady = 10, padx = 10)
 
 adc_btn_start = tk.Button(text = "Start", font = "Arial 11", width = 7, command = adc_read_start)
 adc_btn_start.bind("<Button-1>")
-adc_btn_start.grid(in_ = adc_ad4020_lframe)
+adc_btn_start.grid(in_ = adc_ads1256_lframe)
 adc_btn_stop = tk.Button(text = "Stop", font = "Arial 11", width = 7, command = adc_read_stop)
 adc_btn_stop.bind("<Button-1>")
-adc_btn_stop.grid(in_ = adc_ad4020_lframe)
+adc_btn_stop.grid(in_ = adc_ads1256_lframe)
 
 graph_btn = tk.Button(text = "Graph", font = "Arial 11 bold", command = graph_plot)
 graph_btn.bind("<Button-1>")
-graph_btn.grid(in_ = adc_ad4020_lframe)
+graph_btn.grid(in_ = adc_ads1256_lframe)
 
 #--------------Bridge resistance-------------------#
 divider_lframe = tk.LabelFrame(win, text = "Bridge resistance", font = "Arial 12 bold", width=200, height=100)
@@ -135,13 +144,13 @@ Ppod_lframe.grid(row = 1, column = 0, pady = 10, padx = 10)
 Ppod_entry = tk.Entry(Ppod_lframe, width = 10, font = "Arial 12 bold", justify = "center")
 Ppod_entry.grid(in_ = Ppod_lframe, pady = 10, padx = 10)
 
-set_button = tk.Button(PBP_lframe, text = "Set Um", font = "Arial 11", width = 7, command = dac_set)
+set_button = tk.Button(PBP_lframe, text = "Set Um", font = "Arial 11", width = 7, command = pbp_set)
 set_button.grid(in_ = PBP_lframe, pady = 10, padx = 10) 
 
 #--------------Calculated Um-------------------#
 Um_lframe = tk.LabelFrame(win, text = "Calculated Um", font = "Arial 12 bold", width=200, height=100)
 Um_lframe.grid(row = 2, column = 0, pady = 10, padx = 10)
-Um_label = tk.Label(Um_lframe, text = "_.______V", height = 1, font = "Arial 18 bold", bg = "white")
+Um_label = tk.Label(Um_lframe, text = "__._____V", height = 1, font = "Arial 18 bold", bg = "white")
 Um_label.grid(in_ = Um_lframe, pady = 10, padx = 10)
 
 #------------------------------------------------#
