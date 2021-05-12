@@ -1,5 +1,6 @@
 import tkinter as tk
 import matplotlib.pyplot as plt
+import math
 
 
 import ADC_ads1256
@@ -8,9 +9,10 @@ import DAC_ad5543
 import RPi.GPIO as GPIO
 
 win = tk.Tk()
+win.geometry("350x600")
+win.resizable(False, False)
 win.title("BIM GUI")
 
-#ADC = ADC_ad4020.AD4020(port = 1, cs = 0, mode = 0, speed = 2000000)
 ADC = ADC_ads1256.ADS1256()
 ADC.ADS1256_init()
 DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 2000000)
@@ -21,8 +23,10 @@ adc_stop = True
 graph_run = False
 #_______________________________________
 Rb = 0
-Ppod = 0
+Ppod = {"initial": 0, "delta": 0}
 adc_val_list = [ ]
+Nfilter = 0
+Meas = {"current": 0, "Total": 0}
 
 #_______________DEFINES_________________
 def adc_read_start():
@@ -79,9 +83,15 @@ def graph_plot():
 
 def pbp_set():
     Rb = float(Rb_entry.get())
-    Ppod = float(Ppod_entry.get())
+    Ppod['initial'] = float(Ppod_entry.get())
+    Um = math.sqrt(Ppod["initial"] / Rb / 1000) * (Rb + 1400)
+    print("Ppod = %f" %Ppod['initial'])
     print("Rb = %f" %Rb)
-    print("Ppod = %f" %Ppod)
+    print("Um = %f" %Um)
+    Um_label["text"] = str("%.4f" %Um + " V")
+
+def Um_Ppod_calc():
+     pass   
 
 def close():
     GPIO.cleanup()
@@ -153,10 +163,30 @@ Um_lframe.grid(row = 2, column = 0, pady = 10, padx = 10)
 Um_label = tk.Label(Um_lframe, text = "__._____V", height = 1, font = "Arial 18 bold", bg = "white")
 Um_label.grid(in_ = Um_lframe, pady = 10, padx = 10)
 
-#------------------------------------------------#
+#--------------Choose Mode---------------------#
+balance = tk.BooleanVar()
+balance.set(0)
+
+mode_1 = tk.Radiobutton(win, text = 'Autobalance', font = "Arial 11 bold", variable = balance, value = 0)
+mode_2 = tk.Radiobutton(win, text = 'Setting Rb', font = "Arial 11 bold", variable = balance, value = 1)
+mode_1.place(relx = 0.55, rely = 0.40)
+mode_2.place(relx = 0.55, rely = 0.45)
+
+#--------------Filter------------------------------------#
+Nfilter_label = tk.Label(win, text = "Nfilter", height = 1, font = "Arial 12 bold")
+Nfilter_label.place(relx = 0.55, rely = 0.75)
+Nfilter_entry = tk.Entry(win, width = 3, font = "Arial 12 bold", justify = "center")
+Nfilter_entry.place(relx = 0.70, rely = 0.75)
+
+Meas_label = tk.Label(win, text = "iZ", height = 1, font = "Arial 12 bold")
+Meas_label.place(relx = 0.55, rely = 0.80)
+Meas_entry = tk.Entry(win, width = 3, font = "Arial 12 bold", justify = "center")
+Meas_entry.place(relx = 0.70, rely = 0.80)
+
+
+
 exit_btn = tk.Button(text = "Exit", font = "Arial 11", width = 7, command = close )
 exit_btn.bind("<Button-1>")
 exit_btn.grid(row = 2, column = 1)
 
-win.geometry("350x600")
 win.mainloop()
