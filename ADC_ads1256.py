@@ -166,7 +166,7 @@ class ADS1256:
         self.ADS1256_WaitDRDY()
         config.digital_write(self.cs_pin, GPIO.LOW)#cs  0
         config.spi_writebyte([CMD['CMD_RDATA']])
-        # config.delay_ms(10)
+        #config.delay_ms(10)
 
         buf = config.spi_readbytes(3)
         config.digital_write(self.cs_pin, GPIO.HIGH)#cs 1

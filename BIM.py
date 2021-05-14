@@ -14,8 +14,8 @@ win.resizable(False, False)
 win.title("BIM GUI")
 
 ADC = ADC_ads1256.ADS1256()
-ADC.ADS1256_init()
-DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 2000000)
+ADC.ADS1256_init() ##spi port 0 cs 0 mode 1
+DAC = DAC_ad5791.AD5791(port = 0, cs = 1, mode = 1, speed = 1000000)
 Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
 
 #_________global flags__________________
