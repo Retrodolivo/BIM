@@ -24,16 +24,25 @@ adc_stop = True
 graph_run = False
 #_______________________________________
 Kop = 24 / 6.34 + 1
-Rb = 950
-Ppod = {"initial": 60, "delta": 0}
+PBP = {
+            "Rb": 950,
+            "Ppod": {"initial": 60, "delta": 0},
+            "Rseries": 1400,
+            "K1": 45,
+            "K2": 150
+           }
+
 adc_val_list = [ ]
-Nfilter = 0
-Meas = {"current": 0, "total": 0}
+Nfilter = 5
+Meas = {"current": 0, "total": 5}
+v = 0
 
 #_______________DEFINES_________________
 def init():
-    Rb_entry.insert(0, str(Rb))
-    Ppod_entry.insert(0, str(Ppod['initial']))
+    Rb_entry.insert(0, str(PBP["Rb"]))
+    Ppod_entry.insert(0, str(PBP["Ppod"]['initial']))
+    Nfilter_entry.insert(0, str(Nfilter))
+    Meas_entry.insert(0, str(Meas['total']))
     dac_entry.insert(0, '0')
     vout = dac_entry.get()
 
@@ -78,7 +87,10 @@ def dac_reset():
     dac_entry.delete(0, 'end')
     dac_entry.insert(0, '0')
     DAC.set(0)
-
+    global v
+    v +=  1
+    Um_Ppod_calc(v)
+    
 def divider_set(event):
     Divider.set(Kd.get())
 
@@ -96,11 +108,11 @@ def graph_plot():
     plt.show()
 
 def pbp_set():
-    Rb = float(Rb_entry.get())
-    Ppod['initial'] = float(Ppod_entry.get())
-    Um = math.sqrt(Ppod["initial"] / Rb / 1000) * (Rb + 1400)
-    print("Ppod = %f" %Ppod['initial'])
-    print("Rb = %f" %Rb)
+    PBP["Rb"] = float(Rb_entry.get())
+    PBP["Ppod"]["initial"] = float(Ppod_entry.get())
+    Um = math.sqrt(PBP["Ppod"]["initial"] / PBP["Rb"] / 1000) * (PBP["Rb"] + PBP["Rseries"])
+    print("Ppod = %f" %PBP["Ppod"]["initial"])
+    print("Rb = %f" %PBP["Rb"])
     print("Um = %f" %Um)
     Um_label["text"] = str("%.4f" %Um + " V")
     dac_set(Um / Kop)
@@ -108,9 +120,13 @@ def pbp_set():
     formatter = "{0:.4f}" 
     dac_entry.insert(0, str(formatter.format(Um / Kop)))
     
-
-def Um_Ppod_calc():
-     pass   
+def Um_Ppod_calc(v):
+    Ud = [ ]
+    if(Meas['current'] < Meas['total']):
+        Meas['current'] += 1
+        Ud.append(1)
+        dV = PBP['K1'] * v
+        print(Ud)
 
 def close():
     GPIO.cleanup()
@@ -151,12 +167,11 @@ graph_btn.grid(in_ = adc_ads1256_lframe)
 divider_lframe = tk.LabelFrame(win, text = "Bridge resistance", font = "Arial 12 bold", width=200, height=100)
 divider_lframe.grid(row = 1, column = 1, pady = 10, padx = 10)
 
-KD_MIN = 0
-KD_MAX = 1
+KD = {'min': 0, 'max': 1}
 
 Kd = tk.DoubleVar()
 divider_slide = tk.Scale(divider_lframe, font = "Arial 12 bold", orient = tk.HORIZONTAL, \
-                     from_ = KD_MIN, to_ = KD_MAX, resolution = 0.001, variable = Kd, command = divider_set)
+                     from_ = KD['min'], to_ = KD['max'], resolution = 0.001, variable = Kd, command = divider_set)
 divider_slide.grid(in_ = divider_lframe, pady = 10, padx = 10)
 
 #--------------PBP Parameters-------------------#
