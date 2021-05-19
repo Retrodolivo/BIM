@@ -1,12 +1,13 @@
 import tkinter as tk
 import matplotlib.pyplot as plt
 import math
-
+import RPi.GPIO as GPIO
+from functools import partial
 
 import ADC_ads1256
 import DAC_ad5791
 import DAC_ad5543
-import RPi.GPIO as GPIO
+
 
 win = tk.Tk()
 win.geometry("350x600")
@@ -15,20 +16,28 @@ win.title("BIM GUI")
 
 ADC = ADC_ads1256.ADS1256()
 ADC.ADS1256_init() ##spi port 0 cs 0 mode 1
-DAC = DAC_ad5791.AD5791(port = 0, cs = 1, mode = 1, speed = 1000000)
+DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 1000000)
 Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
 
 #_________global flags__________________
 adc_stop = True
 graph_run = False
 #_______________________________________
-Rb = 0
-Ppod = {"initial": 0, "delta": 0}
+Kop = 24 / 6.34 + 1
+Rb = 950
+Ppod = {"initial": 60, "delta": 0}
 adc_val_list = [ ]
 Nfilter = 0
-Meas = {"current": 0, "Total": 0}
+Meas = {"current": 0, "total": 0}
 
 #_______________DEFINES_________________
+def init():
+    Rb_entry.insert(0, str(Rb))
+    Ppod_entry.insert(0, str(Ppod['initial']))
+    dac_entry.insert(0, '0')
+    vout = dac_entry.get()
+
+    
 def adc_read_start():
     global adc_stop
     global graph_run
@@ -62,11 +71,16 @@ def adc_average_val():
         adc_val_list.append(average_val)
     return average_val
 
-def dac_set():
-    DAC.set(dac_entry.get())
+def dac_set(vout):
+    DAC.set(vout)
+
+def dac_reset():
+    dac_entry.delete(0, 'end')
+    dac_entry.insert(0, '0')
+    DAC.set(0)
 
 def divider_set(event):
-    Divider.set(0)
+    Divider.set(Kd.get())
 
 def graph_plot():
 ##    global graph_run
@@ -89,6 +103,11 @@ def pbp_set():
     print("Rb = %f" %Rb)
     print("Um = %f" %Um)
     Um_label["text"] = str("%.4f" %Um + " V")
+    dac_set(Um / Kop)
+    dac_entry.delete(0, 'end')
+    formatter = "{0:.4f}" 
+    dac_entry.insert(0, str(formatter.format(Um / Kop)))
+    
 
 def Um_Ppod_calc():
      pass   
@@ -105,9 +124,9 @@ dac_ad5791_lframe.grid(row = 0, column = 1, pady = 10, padx = 10)
 dac_entry = tk.Entry(dac_ad5791_lframe, width = 10, font = "Arial 12 bold", justify = "center")
 dac_entry.grid(in_ = dac_ad5791_lframe, pady = 10, padx = 10)
 
-dac_button = tk.Button(dac_ad5791_lframe, text = "Set Um", font = "Arial 11", width = 7, command = dac_set)
+dac_button = tk.Button(dac_ad5791_lframe, text = "Set Um", font = "Arial 11", width = 7, command = partial(dac_set, dac_entry.get()))
 dac_button.grid(in_ = dac_ad5791_lframe)
-dac_button = tk.Button(dac_ad5791_lframe, text = "Reset", font = "Arial 11", width = 7, command = dac_set)
+dac_button = tk.Button(dac_ad5791_lframe, text = "Reset", font = "Arial 11", width = 7, command = dac_reset)
 dac_button.grid(in_ = dac_ad5791_lframe) 
 
 #--------------Bridge output"-------------------#
@@ -137,7 +156,7 @@ KD_MAX = 1
 
 Kd = tk.DoubleVar()
 divider_slide = tk.Scale(divider_lframe, font = "Arial 12 bold", orient = tk.HORIZONTAL, \
-                     from_ = KD_MIN, to_ = KD_MAX, resolution = 0.1, variable = Kd, command = divider_set)
+                     from_ = KD_MIN, to_ = KD_MAX, resolution = 0.001, variable = Kd, command = divider_set)
 divider_slide.grid(in_ = divider_lframe, pady = 10, padx = 10)
 
 #--------------PBP Parameters-------------------#
@@ -183,10 +202,9 @@ Meas_label.place(relx = 0.55, rely = 0.80)
 Meas_entry = tk.Entry(win, width = 3, font = "Arial 12 bold", justify = "center")
 Meas_entry.place(relx = 0.70, rely = 0.80)
 
-
-
 exit_btn = tk.Button(text = "Exit", font = "Arial 11", width = 7, command = close )
 exit_btn.bind("<Button-1>")
 exit_btn.grid(row = 2, column = 1)
 
+init()
 win.mainloop()
