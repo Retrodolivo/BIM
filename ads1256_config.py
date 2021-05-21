@@ -33,7 +33,7 @@ import RPi.GPIO as GPIO
 import time
 
 # Pin definition
-RST_PIN         = 18
+RST_PIN         = 23
 CS_PIN       = 22
 DRDY_PIN        = 17
 

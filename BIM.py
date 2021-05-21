@@ -15,9 +15,9 @@ win.resizable(False, False)
 win.title("BIM GUI")
 
 ADC = ADC_ads1256.ADS1256()
-ADC.ADS1256_init() ##spi port 0 cs 0 mode 1
-DAC = DAC_ad5791.AD5791(port = 0, cs = 0, mode = 1, speed = 1000000)
-Divider = DAC_ad5543.AD5543(port = 1, cs = 2, mode = 0, speed = 1000000)
+ADC.ADS1256_init() #spi port 0 cs 0 mode 1
+DAC = DAC_ad5791.AD5791(port = 3, cs = 0, mode = 1, speed = 1000000)
+Divider = DAC_ad5543.AD5543(port = 1, cs = 0, mode = 0, speed = 1000000)
 
 #_________global flags__________________
 adc_stop = True
@@ -36,6 +36,7 @@ adc_val_list = [ ]
 Nfilter = 5
 Meas = {"current": 0, "total": 5}
 v = 0
+offset = 0.1533
 
 #_______________DEFINES_________________
 def init():
@@ -45,13 +46,12 @@ def init():
     Meas_entry.insert(0, str(Meas['total']))
     dac_entry.insert(0, '0')
     vout = dac_entry.get()
-
     
 def adc_read_start():
     global adc_stop
     global graph_run
     if adc_stop:
-        adc_label["text"] = str("%.6f" %adc_average_val() + " V")
+        adc_label["text"] = str("%.5f" %(Um_buf_calc() + offset) + " V")
         adc_btn_stop["state"] = "normal"
         adc_btn_start["state"] = "disabled"
         win.after(100, adc_read_start)
@@ -127,6 +127,9 @@ def Um_Ppod_calc(v):
         Ud.append(1)
         dV = PBP['K1'] * v
         print(Ud)
+
+def Um_buf_calc():
+    return (adc_average_val() - 2.5) * 2
 
 def close():
     GPIO.cleanup()
