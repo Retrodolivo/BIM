@@ -1,9 +1,11 @@
 import tkinter as tk
+import numpy as np
 import matplotlib.pyplot as plt
-import math
-import RPi.GPIO as GPIO
 from functools import partial
+import math
+import time
 
+import RPi.GPIO as GPIO
 import ADC_ads1256
 import DAC_ad5791
 import DAC_ad5543
@@ -11,7 +13,7 @@ import DAC_ad5543
 
 win = tk.Tk()
 win.geometry("350x600")
-win.resizable(False, False)
+#win.resizable(False, False)
 win.title("BIM GUI")
 
 ADC = ADC_ads1256.ADS1256()
@@ -27,9 +29,11 @@ Kop = 24 / 6.34 + 1
 PBP = {
             "Rb": 950,
             "Ppod": {"initial": 60, "delta": 0},
-            "Rseries": 1400,
+            "Rs": 1400,
             "K1": 45,
-            "K2": 150
+            "K2": 150,
+            "Um": 0,
+            "Pizm": 0
            }
 
 adc_val_list = [ ]
@@ -51,7 +55,7 @@ def adc_read_start():
     global adc_stop
     global graph_run
     if adc_stop:
-        adc_label["text"] = str("%.5f" %(Um_buf_calc() + offset) + " V")
+        adc_label["text"] = str("%.5f" %(Um_buf_calc() ) + " V")
         adc_btn_stop["state"] = "normal"
         adc_btn_start["state"] = "disabled"
         win.after(100, adc_read_start)
@@ -87,9 +91,6 @@ def dac_reset():
     dac_entry.delete(0, 'end')
     dac_entry.insert(0, '0')
     DAC.set(0)
-    global v
-    v +=  1
-    Um_Ppod_calc(v)
     
 def divider_set(event):
     Divider.set(Kd.get())
@@ -110,27 +111,50 @@ def graph_plot():
 def pbp_set():
     PBP["Rb"] = float(Rb_entry.get())
     PBP["Ppod"]["initial"] = float(Ppod_entry.get())
-    Um = math.sqrt(PBP["Ppod"]["initial"] / PBP["Rb"] / 1000) * (PBP["Rb"] + PBP["Rseries"])
+    PBP['Um'] = math.sqrt(PBP["Ppod"]["initial"] / PBP["Rb"] / 1000) * (PBP["Rb"] + PBP["Rs"])
     print("Ppod = %f" %PBP["Ppod"]["initial"])
     print("Rb = %f" %PBP["Rb"])
-    print("Um = %f" %Um)
-    Um_label["text"] = str("%.4f" %Um + " V")
-    dac_set(Um / Kop)
+    print("Um = %f" %PBP['Um'])
+    Um_label["text"] = str("%.4f" %PBP['Um'] + " V")
+    dac_set(PBP['Um'] / Kop)
     dac_entry.delete(0, 'end')
     formatter = "{0:.4f}" 
-    dac_entry.insert(0, str(formatter.format(Um / Kop)))
+    dac_entry.insert(0, str(formatter.format(PBP['Um'] / Kop)))
     
-def Um_Ppod_calc(v):
+def Um_Ppod_calc():
     Ud = [ ]
-    if(Meas['current'] < Meas['total']):
+    while(Meas['current'] < Meas['total']):
+        Ud.append(Um_buf_calc())
+        dV = PBP['K1'] * Ud[Meas['current']]
         Meas['current'] += 1
-        Ud.append(1)
-        dV = PBP['K1'] * v
-        print(Ud)
+    else:
+        Udk = (np.polyfit(list(range(Meas['total'])), Ud, 1)[0] +
+                   np.polyfit(list(range(Meas['total'])), Ud, 1)[1] * len(Ud))
+        dV = PBP['K1'] * Udk + PBP['K2'] * np.polyfit(list(range(Meas['total'])), Ud, 1)[1]
+        Ud = []
+        Meas['current'] = 0
+
+        a = 1 / (PBP['Rb'] / (PBP['Rb'] + PBP['Rs']) + Udk / PBP['Um'])
+        ri = PBP['Rs'] / (a - 1)
+        r = abs(dV)
+        if r > 0.5:
+            dV = 0.5 * dV / r
+        PBP['Um'] = PBP['Um'] - dV
+        u = PBP['Um'] - dV * 1.5
+        dac_set(u)
+        PBP['Pizm'] = 1000 * PBP['Um']**2 * ri / (ri + PBP['Rb']) / (ri + PBP['Rb'])
+        print('Um:%.5f\nP:%.5f\n' %(PBP['Um'], PBP['Pizm']))
+        
+        return PBP['Pizm']
 
 def Um_buf_calc():
-    return (adc_average_val() - 2.5) * 2
+    return -((adc_average_val() - 2.5) * 2 + offset)
 
+def Ppod_get():
+    while balance.get():
+        Um_Ppod_calc()
+        #time.sleep(0.5)
+        
 def close():
     GPIO.cleanup()
     win.destroy()
@@ -204,10 +228,10 @@ Um_label.grid(in_ = Um_lframe, pady = 10, padx = 10)
 balance = tk.BooleanVar()
 balance.set(0)
 
-mode_1 = tk.Radiobutton(win, text = 'Autobalance', font = "Arial 11 bold", variable = balance, value = 0)
-mode_2 = tk.Radiobutton(win, text = 'Setting Rb', font = "Arial 11 bold", variable = balance, value = 1)
-mode_1.place(relx = 0.55, rely = 0.40)
-mode_2.place(relx = 0.55, rely = 0.45)
+mode_auto = tk.Radiobutton(win, text = 'Autobalance', font = "Arial 11 bold", variable = balance, value = 1, command = Ppod_get)
+mode_nauto = tk.Radiobutton(win, text = 'Setting Rb', font = "Arial 11 bold", variable = balance, value = 0)
+mode_auto.place(relx = 0.55, rely = 0.40)
+mode_nauto.place(relx = 0.55, rely = 0.45)
 
 #--------------Filter------------------------------------#
 Nfilter_label = tk.Label(win, text = "Nfilter", height = 1, font = "Arial 12 bold")

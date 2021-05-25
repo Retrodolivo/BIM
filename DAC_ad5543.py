@@ -18,8 +18,8 @@ class AD5543:
     def set(self, vout):
         #vout = entry.get()
         dac_code = MAX_CODE * float(vout) / VREF
-        print(int(dac_code))
-        print(int(dac_code).to_bytes(2, "big"))
+#        print(int(dac_code))
+#        print(int(dac_code).to_bytes(2, "big"))
         dac_data_bytes = bytearray(int(dac_code).to_bytes(2, "big"))
         self.ad5543_spi.writebytes(dac_data_bytes)
 

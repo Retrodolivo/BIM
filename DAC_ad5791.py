@@ -13,7 +13,7 @@ class AD5791:
         self.ad5791_spi.mode = mode
         self.ad5791_spi.max_speed_hz = speed
 
-        initial_voltage = 0
+        initial_voltage = 1
         self.config()
         self.set(initial_voltage)
 
@@ -32,11 +32,11 @@ class AD5791:
     def set(self, vout):
         #vout =  entry.get()
         dac_code = int((float(vout) - VREFN) * MAX_CODE / (VREFP - VREFN))
-        print("int dac_code: %d" %(dac_code))
+#        print("int dac_code: %d" %(dac_code))
         dac_code = dac_code.to_bytes(3, "big")
-        print("dac_code[0]: %x" %(dac_code[0]))
-        print("dac_code[1]: %x" %(dac_code[1]))
-        print("dac_code[2]: %x" %(dac_code[2]))
+#        print("dac_code[0]: %x" %(dac_code[0]))
+#        print("dac_code[1]: %x" %(dac_code[1]))
+#        print("dac_code[2]: %x" %(dac_code[2]))
         dac_reg = (WRITE_REG | DAC_REG_ADDR
                    | dac_code[0] << 16
                    | dac_code[1] << 8
